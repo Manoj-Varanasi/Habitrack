@@ -1,0 +1,9 @@
+# Compiled binaries
+*.exe
+*.o
+*.obj
+out/
+
+# Database files
+*.db
+*.sqlite3
