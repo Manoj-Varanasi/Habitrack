@@ -3,6 +3,7 @@
 *.o
 *.obj
 out/
+notes.md
 
 # Database files
 *.db

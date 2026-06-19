@@ -20,12 +20,6 @@ void addHabit(sqlite3* db, const string& habitName) {
     sqlite3_finalize(stmt);
 }
 
-// The Recipe:
-// Prepare (make the machinery).
-// Bind (load the data securely).
-// Step (run the query).
-// Finalize (clean up memory).
-
 void deleteHabit(sqlite3* db, const string& habitName) {
     string sql = "delete from habits where name = ?;";
     sqlite3_stmt* stmt = nullptr;
@@ -40,6 +34,23 @@ void deleteHabit(sqlite3* db, const string& habitName) {
         cout << "Habit removed successfully!" << endl;
     } else {
         cout << "Failed to remove habit: " << sqlite3_errmsg(db) << endl;
+    }
+    sqlite3_finalize(stmt);
+}
+
+void listHabits(sqlite3* db) {
+    string sql = "select id,name from habits";
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cout << "Failed to prepare select statement : " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+    cout << "---Habits list---\n";
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int id = sqlite3_column_int(stmt, 0);
+        const unsigned char* name = sqlite3_column_text(stmt, 1);
+        cout << id << ". " << name << endl;
     }
     sqlite3_finalize(stmt);
 }
@@ -69,6 +80,8 @@ int main() {
     cout << "Table created successfully" << endl;
     addHabit(db, "Reading Book");
     addHabit(db, "Jogging");
+    listHabits(db);
     deleteHabit(db, "Jogging");
+    listHabits(db);
     sqlite3_close(db);
 }
