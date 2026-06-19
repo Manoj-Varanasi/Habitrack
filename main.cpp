@@ -55,6 +55,21 @@ void listHabits(sqlite3* db) {
     sqlite3_finalize(stmt);
 }
 
+void clearHabits(sqlite3* db) {
+    string sql = R"(
+        delete from habits;
+        delete from sqlite_sequence where name='habits';
+    )";
+    char* errMsg = nullptr;
+    int rc = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &errMsg);
+    if (rc != SQLITE_OK) {
+        cout << "Failed to clear habits: " << errMsg << endl;
+        sqlite3_free(errMsg);
+        return;
+    }
+    cout << "All habits cleared successfully!" << endl;
+}
+
 int main() {
     sqlite3* db = nullptr;
     int rc = sqlite3_open("habits.db", &db);
@@ -82,6 +97,10 @@ int main() {
     addHabit(db, "Jogging");
     listHabits(db);
     deleteHabit(db, "Jogging");
+    listHabits(db);
+    clearHabits(db);
+    addHabit(db, "Reading Book");
+    addHabit(db, "Jogging");
     listHabits(db);
     sqlite3_close(db);
 }
