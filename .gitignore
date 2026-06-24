@@ -4,6 +4,8 @@
 *.obj
 out/
 notes.md
+sqlibrary.md
+httpibrary.md
 
 # Database files
 *.db

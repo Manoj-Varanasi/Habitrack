@@ -1,4 +1,5 @@
 #include <bits/stdc++.h>
+#include "httplib.h"
 #include "sqlite3.h"
 using namespace std;
 
@@ -93,14 +94,11 @@ int main() {
         return 1;
     }
     cout << "Table created successfully" << endl;
-    addHabit(db, "Reading Book");
-    addHabit(db, "Jogging");
-    listHabits(db);
-    deleteHabit(db, "Jogging");
-    listHabits(db);
-    clearHabits(db);
-    addHabit(db, "Reading Book");
-    addHabit(db, "Jogging");
-    listHabits(db);
+    httplib::Server svr;
+    svr.Get("/", [](const httplib::Request& req, httplib::Response& res) {
+        res.set_content("Hello Worurdo", "text/plain");
+    });
+    cout << "Server is starting at http://localhost:8080 \n";
+    svr.listen("localhost", 8080);
     sqlite3_close(db);
 }
