@@ -71,6 +71,28 @@ void clearHabits(sqlite3* db) {
     cout << "All habits cleared successfully!" << endl;
 }
 
+string getHabits(sqlite3* db) {
+    string sql = "select id,name from habits;";
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        return "Failed to fetch Habits " + string(sqlite3_errmsg(db));
+    }
+    string result = "--- Habits List ---\n";
+    bool hasHabits = false;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        hasHabits = true;
+        int id = sqlite3_column_int(stmt, 0);
+        const unsigned char* name = sqlite3_column_text(stmt, 1);
+        result += to_string(id) + ". " + string((const char*)name) + "\n";
+    }
+    if (!hasHabits) {
+        result += "No habits added yet\n";
+    }
+    sqlite3_finalize(stmt);
+    return result;
+}
+
 int main() {
     sqlite3* db = nullptr;
     int rc = sqlite3_open("habits.db", &db);
@@ -98,6 +120,11 @@ int main() {
     svr.Get("/", [](const httplib::Request& req, httplib::Response& res) {
         res.set_content("Hello Worurdo", "text/plain");
     });
+    svr.Get("/habits", [db](const httplib::Request& req, httplib::Response& res) {
+        string list = getHabits(db);
+        res.set_content(list, "text/plain");
+    });
+
     cout << "Server is starting at http://localhost:8080 \n";
     svr.listen("localhost", 8080);
     sqlite3_close(db);
