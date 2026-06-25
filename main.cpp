@@ -125,6 +125,28 @@ int main() {
         res.set_content(list, "text/plain");
     });
 
+    svr.Post("/api/add", [db](const httplib::Request& req, httplib::Response& res) {
+        if (!req.has_param("name")) {
+            res.status = 400;
+            res.set_content("Missing 'name' parameter", "text/plain");
+            return;
+        }
+        string name = req.get_param_value("name");
+        addHabit(db, name);
+        res.set_content("Habit '" + name + "' added successfully!", "text/plain");
+    });
+
+    svr.Post("/api/delete", [db](const httplib::Request& req, httplib::Response& res) {
+        if (!req.has_param("name")) {
+            res.status = 400;
+            res.set_content("Missing 'name' parameter", "text/plain");
+            return;
+        }
+        string name = req.get_param_value("name");
+        deleteHabit(db, name);
+        res.set_content("Habit '" + name + "' is deleted successfully", "text/plain");
+    });
+
     cout << "Server is starting at http://localhost:8080 \n";
     svr.listen("localhost", 8080);
     sqlite3_close(db);
