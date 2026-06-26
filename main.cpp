@@ -93,6 +93,25 @@ string getHabits(sqlite3* db) {
     return result;
 }
 
+void completeHabit(sqlite3* db, int habitId, string& date) {
+    string sql = "insert into completions (habit_id,date) values (?,?);";
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare(db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        cout << "Failed to prepare completion : " << sqlite3_errmsg(db) << endl;
+        return;
+    }
+    sqlite3_bind_int(stmt, 1, habitId);
+    sqlite3_bind_text(stmt, 2, date.c_str(), -1, SQLITE_TRANSIENT);
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_DONE) {
+        cout << "Habit marked completed successfully!" << endl;
+    } else {
+        cout << "Failed to complete habit: " << sqlite3_errmsg(db) << endl;
+    }
+    sqlite3_finalize(stmt);
+}
+
 int main() {
     sqlite3* db = nullptr;
     int rc = sqlite3_open("habits.db", &db);
@@ -105,6 +124,12 @@ int main() {
         create table if not exists habits (
             id integer primary key autoincrement,
             name text not null unique
+        );
+        create table if not exists completions (
+            habit_id integer,
+            date text,
+            primary key(habit_id,date),
+            foreign key (habit_id) references habits(id) on delete cascade
         );
     )";
     char* errMsg = nullptr;
@@ -145,6 +170,18 @@ int main() {
         string name = req.get_param_value("name");
         deleteHabit(db, name);
         res.set_content("Habit '" + name + "' is deleted successfully", "text/plain");
+    });
+
+    svr.Post("/api/complete", [db](const httplib::Request& req, httplib::Response& res) {
+        if (!req.has_param("id") || !req.has_param("date")) {
+            res.status = 400;
+            res.set_content("Missing 'id' or 'date' parameter", "text/plain");
+            return;
+        }
+        int habitId = stoi(req.get_param_value("id"));
+        string date = req.get_param_value("date");
+        completeHabit(db, habitId, date);
+        res.set_content("Habit marked completed successfully!", "text/plain");
     });
 
     cout << "Server is starting at http://localhost:8080 \n";
