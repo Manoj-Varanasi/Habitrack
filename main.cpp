@@ -151,6 +151,7 @@ int main() {
     svr.Get("/", [](const httplib::Request& req, httplib::Response& res) {
         res.set_content("Hello Worurdo", "text/plain");
     });
+
     svr.Get("/habits", [db](const httplib::Request& req, httplib::Response& res) {
         string date = "2026-06-27";
         if (req.has_param("date")) {
@@ -180,6 +181,11 @@ int main() {
         string name = req.get_param_value("name");
         deleteHabit(db, name);
         res.set_content("Habit '" + name + "' is deleted successfully", "text/plain");
+    });
+
+    svr.Post("/api/clear", [db](const httplib::Request& req, httplib::Response& res) {
+        clearHabits(db);
+        res.set_content("All habits and completions cleared successfully!", "text/plain");
     });
 
     svr.Post("/api/complete", [db](const httplib::Request& req, httplib::Response& res) {
