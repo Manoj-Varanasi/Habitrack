@@ -60,6 +60,7 @@ void clearHabits(sqlite3* db) {
     string sql = R"(
         delete from habits;
         delete from sqlite_sequence where name='habits';
+        delete from completions;
     )";
     char* errMsg = nullptr;
     int rc = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &errMsg);
@@ -71,20 +72,25 @@ void clearHabits(sqlite3* db) {
     cout << "All habits cleared successfully!" << endl;
 }
 
-string getHabits(sqlite3* db) {
-    string sql = "select id,name from habits;";
+string getHabits(sqlite3* db, const string& date) {
+    string sql = "select habits.id,habits.name,completions.date from habits left join completions on habits.id=completions.habit_id and completions.date=?;";
     sqlite3_stmt* stmt = nullptr;
     int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
         return "Failed to fetch Habits " + string(sqlite3_errmsg(db));
     }
     string result = "--- Habits List ---\n";
+    sqlite3_bind_text(stmt, 1, date.c_str(), -1, SQLITE_TRANSIENT);
     bool hasHabits = false;
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         hasHabits = true;
         int id = sqlite3_column_int(stmt, 0);
         const unsigned char* name = sqlite3_column_text(stmt, 1);
-        result += to_string(id) + ". " + string((const char*)name) + "\n";
+        string status = "[Pending]";
+        if (sqlite3_column_type(stmt, 2) != SQLITE_NULL) {
+            status = "[Completed]";
+        }
+        result += to_string(id) + ". " + string((const char*)name) + " " + status + "\n";
     }
     if (!hasHabits) {
         result += "No habits added yet\n";
@@ -146,7 +152,11 @@ int main() {
         res.set_content("Hello Worurdo", "text/plain");
     });
     svr.Get("/habits", [db](const httplib::Request& req, httplib::Response& res) {
-        string list = getHabits(db);
+        string date = "2026-06-27";
+        if (req.has_param("date")) {
+            date = req.get_param_value("date");
+        }
+        string list = getHabits(db, date);
         res.set_content(list, "text/plain");
     });
 
