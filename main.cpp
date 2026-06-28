@@ -3,6 +3,14 @@
 #include "sqlite3.h"
 using namespace std;
 
+string getTodayDate() {
+    time_t t = time(nullptr);
+    tm* now = localtime(&t);
+    stringstream ss;
+    ss << put_time(now, "%Y-%m-%d");
+    return ss.str();
+}
+
 void addHabit(sqlite3* db, const string& habitName) {
     string sql = "insert into habits (name) values (?);";
     sqlite3_stmt* stmt = nullptr;
@@ -79,22 +87,22 @@ string getHabits(sqlite3* db, const string& date) {
     if (rc != SQLITE_OK) {
         return "Failed to fetch Habits " + string(sqlite3_errmsg(db));
     }
-    string result = "--- Habits List ---\n";
+    string result = "[";
+    bool first = true;
     sqlite3_bind_text(stmt, 1, date.c_str(), -1, SQLITE_TRANSIENT);
     bool hasHabits = false;
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         hasHabits = true;
+        if (!first) {
+            result += ",";
+        }
+        first = false;
         int id = sqlite3_column_int(stmt, 0);
         const unsigned char* name = sqlite3_column_text(stmt, 1);
-        string status = "[Pending]";
-        if (sqlite3_column_type(stmt, 2) != SQLITE_NULL) {
-            status = "[Completed]";
-        }
-        result += to_string(id) + ". " + string((const char*)name) + " " + status + "\n";
+        bool completed = (sqlite3_column_type(stmt, 2) != SQLITE_NULL);
+        result += "{\"id\":" + to_string(id) + ",\"name\":\"" + string((const char*)name) + "\",\"completed\":" + (completed ? "true" : "false") + "}";
     }
-    if (!hasHabits) {
-        result += "No habits added yet\n";
-    }
+    result += "]";
     sqlite3_finalize(stmt);
     return result;
 }
@@ -153,12 +161,12 @@ int main() {
     });
 
     svr.Get("/habits", [db](const httplib::Request& req, httplib::Response& res) {
-        string date = "2026-06-27";
+        string date = getTodayDate();
         if (req.has_param("date")) {
             date = req.get_param_value("date");
         }
         string list = getHabits(db, date);
-        res.set_content(list, "text/plain");
+        res.set_content(list, "application/json");
     });
 
     svr.Post("/api/add", [db](const httplib::Request& req, httplib::Response& res) {
