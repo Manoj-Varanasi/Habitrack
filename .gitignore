@@ -6,6 +6,7 @@ out/
 notes.md
 sqlibrary.md
 httpibrary.md
+libraries.md
 
 # Database files
 *.db
