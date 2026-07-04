@@ -34,9 +34,11 @@ int main() {
         return 1;
     }
     cout << "Table created successfully" << endl;
+
     httplib::Server svr;
+
     svr.Get("/", [](const httplib::Request& req, httplib::Response& res) {
-        res.set_content("Hello Worurdo", "text/plain");
+        res.set_content("Herro Worurdo", "text/plain");
     });
 
     svr.Get("/habits", [db](const httplib::Request& req, httplib::Response& res) {
@@ -85,6 +87,17 @@ int main() {
         string date = req.get_param_value("date");
         completeHabit(db, habitId, date);
         res.set_content("Habit marked completed successfully!", "text/plain");
+    });
+
+    svr.Options(R"(/.*)", [](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        res.status = 200;
+    });
+
+    svr.set_post_routing_handler([](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
     });
 
     cout << "Server is starting at http://localhost:8080 \n";
