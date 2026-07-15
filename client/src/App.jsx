@@ -15,38 +15,33 @@ function App() {
         };
         loadHabits();
     }, []);
-    return (
-        <div className="p-6 font-sans bg-white text-gray-900 min-h-screen">
-            <h1 className="text-3xl font-bold">Habitrack</h1>
-            <p className="text-gray-500 mt-1">Manage your daily habits</p>
+        return (
+        <div className={`grid ${isSidebarOpen ? "grid-cols-[220px_1fr]" : "grid-cols-[70px_1fr]"} min-h-screen bg-[#E0B17D] text-[#2A1A0F] transition-all duration-300 font-sans`}>
+            
+            <aside className={`bg-[#7F2F07] border-r border-[#CDB494]/30 flex flex-col justify-between overflow-hidden transition-all duration-300 ${isSidebarOpen ? "p-5" : "p-4"}`}>
+                <div className="flex flex-col gap-6">
+                    
+                    <div className="flex items-center gap-3 border-b border-[#CDB494]/20 pb-4 h-12">
+                        <button 
+                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                            className="focus:outline-none hover:opacity-80 transition-opacity"
+                        >
+                            <img src="/key.png" alt="toggle key" className="w-8 h-8 rounded-lg" />
+                        </button>
+                        {isSidebarOpen && (
+                            <span className="font-bold text-lg tracking-wider text-[#F6EFE5] italic">
+                                HabitTracker
+                            </span>
+                        )}
+                    </div>
 
-            <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-sm font-medium transition-colors"
-            >
-                {isSidebarOpen ? "Hide Menu" : "Show Menu"}
-            </button>
-
-            {isSidebarOpen && (
-                <div className="my-4 p-4 border border-gray-200 rounded-lg w-56">
-                    <strong className="text-gray-800">Menu</strong>
-                    <p className="text-gray-500 text-sm mt-1">Today's Ledger</p>
                 </div>
-            )}
+            </aside>
 
-            <hr className="my-6 border-gray-200" />
+            <main className="p-8">
+                <span>Main Content Placeholder</span>
+            </main>
 
-            <h2 className="text-xl font-bold text-gray-800">Habits</h2>
-            <ul className="mt-4">
-                {habits.map((habit) => (
-                    <li key={habit.id} className="my-3 p-3 bg-gray-50 border border-gray-200 rounded-lg max-w-md flex justify-between items-center">
-                        <span className="font-semibold text-gray-700">{habit.name}</span>
-                        <span className={habit.completed ? "text-emerald-600 font-bold" : "text-amber-600 font-bold"}>
-                            {habit.completed ? "Completed" : "Pending"}
-                        </span>
-                    </li>
-                ))}
-            </ul>
         </div>
     );
 }
