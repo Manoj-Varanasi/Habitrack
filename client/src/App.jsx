@@ -1,3 +1,12 @@
+import {
+  fetchHabits,
+  addHabit,
+  deleteHabit,
+  toggleCompleteHabit,
+  fetchAnalytics,
+} from "./api";
+import HabitCard from "./components/HabitCard";
+import AnalyticsChart from "./components/AnalyticsChart";
 import React, { useState, useEffect } from "react";
 
 function App() {
@@ -7,52 +16,44 @@ function App() {
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingHabitName, setDeletingHabitName] = useState("");
+  const [analyticsData, setAnalyticsData] = useState([]);
+
   const loadHabits = async () => {
     try {
-      const response = await fetch("http://localhost:1111/habits");
-      const data = await response.json();
+      const data = await fetchHabits();
       setHabits(data);
+      const analytics = await fetchAnalytics();
+      setAnalyticsData(analytics);
     } catch (error) {
-      console.error("Error fetching habits:", error);
+      console.error("Error fetching data:", error);
     }
   };
-  useEffect(() => {
-    loadHabits();
-  }, []);
   const handleToggleComplete = async (habit) => {
     const today = new Date().toISOString().split("T")[0];
-    await fetch("http://localhost:1111/api/complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: habit.id, date: today }),
-    });
+    await toggleCompleteHabit(habit.id, today);
     loadHabits();
   };
 
   const handleAddHabit = async (e) => {
     e.preventDefault();
     if (!newHabitName.trim()) return;
-
-    await fetch("http://localhost:1111/api/add", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newHabitName.trim() }),
-    });
-
+    await addHabit(newHabitName);
     setNewHabitName("");
     loadHabits();
   };
+
   const handleDeleteHabit = async (name) => {
+    if (!name) return;
     if (window.confirm(`Are you sure you want to delete '${name}'?`)) {
-      await fetch(
-        `http://localhost:1111/api/delete/${encodeURIComponent(name)}`,
-        {
-          method: "DELETE",
-        },
-      );
+      await deleteHabit(name);
+      setDeletingHabitName("");
       loadHabits();
     }
   };
+
+  useEffect(() => {
+    loadHabits();
+  }, []);
   return (
     <div
       className={`grid ${isSidebarOpen ? "grid-cols-[220px_1fr]" : "grid-cols-[70px_1fr]"} min-h-screen bg-[#E0B17D] text-[#2A1A0F] transition-all duration-300 font-sans`}
@@ -178,40 +179,18 @@ function App() {
           </div>
         </header>
 
+        
+
         <div className="flex flex-wrap gap-6 justify-center md:justify-start">
           {habits.map((habit) => (
-            <div
+            <HabitCard
               key={habit.id}
-              className="p-6 bg-[#F6EFE5] text-[#2A1A0F] rounded-lg shadow-md shadow-black/10 border border-[#CDB494]/30 flex flex-col justify-between w-72 h-36"
-            >
-              <span className="text-xl font-semibold tracking-wide italic">
-                {habit.name}
-              </span>
-
-              <div className="border-t border-[#CDB494]/30 pt-3 flex justify-between items-center text-sm">
-                <button
-                  onClick={() => handleToggleComplete(habit)}
-                  className="focus:outline-none hover:opacity-80 transition-opacity text-left"
-                >
-                  <span className="italic text-[#6B5B47]">Status : </span>
-                  <span
-                    className={
-                      habit.completed
-                        ? "text-[#C98928] font-bold"
-                        : "text-[#AB5419] font-bold"
-                    }
-                  >
-                    {habit.completed ? "Completed" : "Pending"}
-                  </span>
-                </button>
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#AB5419]">
-                  <span>🔥</span>
-                  <span>{habit.streak || 0}</span>
-                </div>
-              </div>
-            </div>
+              habit={habit}
+              onToggle={handleToggleComplete}
+            />
           ))}
         </div>
+        <AnalyticsChart data={analyticsData} />
       </main>
     </div>
   );

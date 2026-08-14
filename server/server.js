@@ -141,4 +141,25 @@ app.post("/api/complete", async (req, res) => {
   }
 });
 
+app.get("/api/analytics", async (req, res) => {
+  const result = [];
+
+  for (let i = 6; i >= 0; i--) {
+    let d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split("T")[0];
+    const displayDate = d.toLocaleDateString("en-US", { weekday: "short" });
+    const completedRow = await db.get(
+      `SELECT COUNT(*) AS completed FROM completions WHERE date = '${dateStr}'`,
+    );
+
+    result.push({
+      date: displayDate,
+      completed: completedRow.completed || 0,
+    });
+  }
+
+  res.json(result);
+});
+
 module.exports = app;
