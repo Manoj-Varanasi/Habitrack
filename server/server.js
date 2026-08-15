@@ -12,6 +12,7 @@ let db = null;
 app.use(cors());
 app.use(express.json());
 
+//used to create db, if db is present, starts server
 const initialiseDB = async () => {
   try {
     db = await open({
@@ -39,6 +40,7 @@ const initialiseDB = async () => {
 };
 initialiseDB();
 
+//calculates streak with my own implementation
 const getHabitStreak = async (db, habitId) => {
   const query = `
         select date from completions
@@ -67,6 +69,7 @@ const getHabitStreak = async (db, habitId) => {
   return streak;
 };
 
+//1.returns all habits and streaks of em
 app.get("/habits", async (req, res) => {
   const { date } = req.query;
   const today = new Date().toISOString().split("T")[0];
@@ -83,6 +86,7 @@ app.get("/habits", async (req, res) => {
   res.send(resp);
 });
 
+//2.adds a habit
 app.post("/api/add", async (req, res) => {
   const { name } = req.body;
 
@@ -97,6 +101,7 @@ app.post("/api/add", async (req, res) => {
   res.status(200).send(`Habit '${name}' added Successfully`);
 });
 
+//3. deletes a habit
 app.delete("/api/delete/:name", async (req, res) => {
   const { name } = req.params;
 
@@ -111,12 +116,14 @@ app.delete("/api/delete/:name", async (req, res) => {
   res.status(200).send(`Habit '${name}' deleted Successfully`);
 });
 
+//4. clears whole database
 app.delete("/api/clear", async (req, res) => {
   await db.run("delete from habits");
   await db.run("delete from completions");
   res.status(200).send("All habits and completions are deleted successfully");
 });
 
+//5. sets a habit is completed and vice versa
 app.post("/api/complete", async (req, res) => {
   const { id, date } = req.body;
 
@@ -141,6 +148,7 @@ app.post("/api/complete", async (req, res) => {
   }
 });
 
+//calculates no of habits done in a week for rechart
 app.get("/api/analytics", async (req, res) => {
   const result = [];
 

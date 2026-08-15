@@ -17,10 +17,13 @@ function App() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingHabitName, setDeletingHabitName] = useState("");
   const [analyticsData, setAnalyticsData] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(
+    () => new Date().toISOString().split("T")[0],
+  );
 
   const loadHabits = async () => {
     try {
-      const data = await fetchHabits();
+      const data = await fetchHabits(selectedDate);
       setHabits(data);
       const analytics = await fetchAnalytics();
       setAnalyticsData(analytics);
@@ -30,7 +33,7 @@ function App() {
   };
   const handleToggleComplete = async (habit) => {
     const today = new Date().toISOString().split("T")[0];
-    await toggleCompleteHabit(habit.id, today);
+    await toggleCompleteHabit(habit.id, selectedDate);
     loadHabits();
   };
 
@@ -53,7 +56,7 @@ function App() {
 
   useEffect(() => {
     loadHabits();
-  }, []);
+  }, [selectedDate]);
   return (
     <div
       className={`grid ${isSidebarOpen ? "grid-cols-[220px_1fr]" : "grid-cols-[70px_1fr]"} min-h-screen bg-[#E0B17D] text-[#2A1A0F] transition-all duration-300 font-sans`}
@@ -177,10 +180,13 @@ function App() {
               Record of daily pursuits
             </p>
           </div>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-3 py-1.5 bg-[#F6EFE5] border border-[#CDB494]/60 rounded-lg text-sm text-[#2A1A0F] font-semibold focus:outline-none focus:border-[#AB5419] shadow-sm cursor-pointer"
+          />
         </header>
-
-        
-
         <div className="flex flex-wrap gap-6 justify-center md:justify-start">
           {habits.map((habit) => (
             <HabitCard
