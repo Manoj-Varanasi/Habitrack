@@ -8,6 +8,7 @@ import {
 import HabitCard from "./components/HabitCard";
 import AnalyticsChart from "./components/AnalyticsChart";
 import React, { useState, useEffect } from "react";
+import AuthScreen from "./components/AuthScreen";
 
 function App() {
   const [habits, setHabits] = useState([]);
@@ -19,6 +20,10 @@ function App() {
   const [analyticsData, setAnalyticsData] = useState([]);
   const [selectedDate, setSelectedDate] = useState(
     () => new Date().toISOString().split("T")[0],
+  );
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [currentUsername, setCurrentUsername] = useState(
+    () => localStorage.getItem("username") || "",
   );
 
   const loadHabits = async () => {
@@ -32,7 +37,6 @@ function App() {
     }
   };
   const handleToggleComplete = async (habit) => {
-    const today = new Date().toISOString().split("T")[0];
     await toggleCompleteHabit(habit.id, selectedDate);
     loadHabits();
   };
@@ -40,23 +44,52 @@ function App() {
   const handleAddHabit = async (e) => {
     e.preventDefault();
     if (!newHabitName.trim()) return;
-    await addHabit(newHabitName);
-    setNewHabitName("");
-    loadHabits();
+    try {
+      await addHabit(newHabitName);
+      setNewHabitName("");
+      setIsAdding(false);
+      loadHabits();
+    } catch (error) {
+      console.error("Error adding habit:", error);
+    }
   };
 
   const handleDeleteHabit = async (name) => {
-    if (!name) return;
-    if (window.confirm(`Are you sure you want to delete '${name}'?`)) {
-      await deleteHabit(name);
+    const targetName =
+      name || deletingHabitName || (habits[0] && habits[0].name);
+    if (!targetName) return;
+    if (window.confirm(`Are you sure you want to delete '${targetName}'?`)) {
+      await deleteHabit(targetName);
       setDeletingHabitName("");
+      setIsDeleting(false);
       loadHabits();
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    setHabits([]);
+    setAnalyticsData([]);
+    setToken(null);
+    setCurrentUsername("");
+  };
+
   useEffect(() => {
-    loadHabits();
-  }, [selectedDate]);
+    if (token) {
+      loadHabits();
+    }
+  }, [selectedDate, token]);
+  if (!token) {
+    return (
+      <AuthScreen
+        onLoginSuccess={() => {
+          setToken(localStorage.getItem("token"));
+          setCurrentUsername(localStorage.getItem("username") || "");
+        }}
+      />
+    );
+  }
   return (
     <div
       className={`grid ${isSidebarOpen ? "grid-cols-[220px_1fr]" : "grid-cols-[70px_1fr]"} min-h-screen bg-[#E0B17D] text-[#2A1A0F] transition-all duration-300 font-sans`}
@@ -167,6 +200,22 @@ function App() {
                 </div>
               </div>
             ))}
+          {isSidebarOpen && (
+            <div className="mt-auto pt-4 border-t border-[#CDB494]/20 flex flex-col gap-2">
+              <div className="text-xs text-[#F6EFE5] italic">
+                Logged in as:{" "}
+                <span className="font-bold text-[#C98928]">
+                  {currentUsername}
+                </span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 bg-[#251712] hover:bg-[#AB5419] text-[#F6EFE5] text-xs font-bold rounded transition-colors"
+              >
+                🚪 Logout
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -183,7 +232,9 @@ function App() {
           <input
             type="date"
             value={selectedDate}
+            onClick={(e) => e.target.showPicker && e.target.showPicker()}
             onChange={(e) => setSelectedDate(e.target.value)}
+            style={{ colorScheme: "light" }}
             className="px-3 py-1.5 bg-[#F6EFE5] border border-[#CDB494]/60 rounded-lg text-sm text-[#2A1A0F] font-semibold focus:outline-none focus:border-[#AB5419] shadow-sm cursor-pointer"
           />
         </header>
