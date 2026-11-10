@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:1111";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:1111";
 
 export const fetchHabits = async (date = "") => {
   const url = date ? `${BASE_URL}/habits?date=${date}` : `${BASE_URL}/habits`;
@@ -21,7 +21,7 @@ export const deleteHabit = async (name) => {
     {
       method: "DELETE",
       headers: getAuthHeaders(),
-    }
+    },
   );
   return await response.text();
 };

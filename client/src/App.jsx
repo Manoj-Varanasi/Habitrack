@@ -119,7 +119,10 @@ function App() {
           {isSidebarOpen &&
             (!isAdding ? (
               <button
-                onClick={() => setIsAdding(true)}
+                onClick={() => {
+                  setIsAdding(true);
+                  setIsDeleting(false);
+                }}
                 className="p-2 bg-[#AB5419] hover:bg-[#AA7C4D] text-white text-xs font-bold rounded"
               >
                 + Add Habit
@@ -158,10 +161,12 @@ function App() {
               </form>
             ))}
           {isSidebarOpen &&
+            habits.length > 0 &&
             (!isDeleting ? (
               <button
                 onClick={() => {
                   setIsDeleting(true);
+                  setIsAdding(false);
                   if (habits.length > 0) setDeletingHabitName(habits[0].name);
                 }}
                 className="p-2 bg-[#AB5419]/20 hover:bg-[#AB5419]/40 text-[#F6EFE5] text-xs font-bold rounded border border-[#AB5419]/30"

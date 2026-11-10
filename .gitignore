@@ -8,6 +8,7 @@ sqlibrary.md
 httpibrary.md
 libraries.md
 tailibrary.md
+.env
 
 # Database files
 *.db
