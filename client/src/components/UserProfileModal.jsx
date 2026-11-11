@@ -174,28 +174,6 @@ function UserProfileModal({ isOpen, onClose }) {
             )}
           </div>
 
-          {/* Upcoming Features Preview */}
-          <div className="border-t border-[#CDB494]/40 pt-4 flex flex-col gap-2">
-            <span className="text-xs font-bold text-[#7F2F07] uppercase tracking-wider flex items-center gap-1.5">
-              <span>🚀</span>
-              <span>Coming Soon</span>
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 bg-[#E0B17D]/20 border border-[#CDB494]/30 rounded-lg">
-                <span className="font-bold text-[#7F2F07] block">⚔️ Competitive Face-Off</span>
-                <span className="text-[#6B5B47] text-[11px] leading-tight block mt-0.5">
-                  Side-by-side consistency comparison charts with friends.
-                </span>
-              </div>
-              <div className="p-2.5 bg-[#E0B17D]/20 border border-[#CDB494]/30 rounded-lg">
-                <span className="font-bold text-[#7F2F07] block">🔔 Motivation Nudge</span>
-                <span className="text-[#6B5B47] text-[11px] leading-tight block mt-0.5">
-                  Send a 1-click notification when partner hasn't logged today.
-                </span>
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* Footer */}
