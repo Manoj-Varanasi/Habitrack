@@ -1,23 +1,30 @@
 import {
   fetchHabits,
   addHabit,
+  addDualHabit,
   deleteHabit,
   toggleCompleteHabit,
   fetchAnalytics,
+  fetchFriends,
 } from "./api";
 import HabitCard from "./components/HabitCard";
 import AnalyticsChart from "./components/AnalyticsChart";
 import React, { useState, useEffect } from "react";
 import AuthScreen from "./components/AuthScreen";
+import UserProfileModal from "./components/UserProfileModal";
 
 function App() {
   const [habits, setHabits] = useState([]);
+  const [friends, setFriends] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [newHabitName, setNewHabitName] = useState("");
+  const [isDualHabit, setIsDualHabit] = useState(false);
+  const [selectedPartnerId, setSelectedPartnerId] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deletingHabitName, setDeletingHabitName] = useState("");
   const [analyticsData, setAnalyticsData] = useState([]);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
     () => new Date().toISOString().split("T")[0],
   );
@@ -32,10 +39,16 @@ function App() {
       setHabits(data);
       const analytics = await fetchAnalytics();
       setAnalyticsData(analytics);
+      const friendsList = await fetchFriends();
+      setFriends(friendsList);
+      if (friendsList.length > 0 && !selectedPartnerId) {
+        setSelectedPartnerId(friendsList[0].id);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   };
+
   const handleToggleComplete = async (habit) => {
     await toggleCompleteHabit(habit.id, selectedDate);
     loadHabits();
@@ -44,13 +57,20 @@ function App() {
   const handleAddHabit = async (e) => {
     e.preventDefault();
     if (!newHabitName.trim()) return;
+
     try {
-      await addHabit(newHabitName);
+      if (isDualHabit && selectedPartnerId) {
+        await addDualHabit(newHabitName, selectedPartnerId);
+      } else {
+        await addHabit(newHabitName);
+      }
       setNewHabitName("");
       setIsAdding(false);
+      setIsDualHabit(false);
       loadHabits();
     } catch (error) {
       console.error("Error adding habit:", error);
+      alert(error.message || "Failed to add habit");
     }
   };
 
@@ -70,6 +90,7 @@ function App() {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
     setHabits([]);
+    setFriends([]);
     setAnalyticsData([]);
     setToken(null);
     setCurrentUsername("");
@@ -80,6 +101,7 @@ function App() {
       loadHabits();
     }
   }, [selectedDate, token]);
+
   if (!token) {
     return (
       <AuthScreen
@@ -90,14 +112,20 @@ function App() {
       />
     );
   }
+
   return (
     <div
-      className={`grid ${isSidebarOpen ? "grid-cols-[220px_1fr]" : "grid-cols-[70px_1fr]"} min-h-screen bg-[#E0B17D] text-[#2A1A0F] transition-all duration-300 font-sans`}
+      className={`grid ${
+        isSidebarOpen ? "grid-cols-[240px_1fr]" : "grid-cols-[70px_1fr]"
+      } min-h-screen bg-[#E0B17D] text-[#2A1A0F] transition-all duration-300 font-sans`}
     >
       <aside
-        className={`bg-[#7F2F07] border-r border-[#CDB494]/30 flex flex-col justify-between overflow-hidden transition-all duration-300 ${isSidebarOpen ? "p-5" : "p-4"}`}
+        className={`bg-[#7F2F07] border-r border-[#CDB494]/30 flex flex-col justify-between overflow-hidden transition-all duration-300 ${
+          isSidebarOpen ? "p-5" : "p-4"
+        }`}
       >
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
+          {/* Top Brand & Key Toggle */}
           <div className="flex items-center gap-3 border-b border-[#CDB494]/20 pb-4 h-12">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -116,6 +144,25 @@ function App() {
             )}
           </div>
 
+          {/* User Profile & Friends Button */}
+          {isSidebarOpen && (
+            <button
+              onClick={() => setIsProfileOpen(true)}
+              className="w-full py-2 px-3 bg-[#E0B17D]/20 hover:bg-[#E0B17D]/30 border border-[#CDB494]/30 text-[#F6EFE5] text-xs font-bold rounded-lg flex items-center justify-between transition-colors shadow-sm"
+            >
+              <span className="flex items-center gap-2">
+                <span>👤</span>
+                <span>Profile & Friends</span>
+              </span>
+              {friends.length > 0 && (
+                <span className="bg-[#AB5419] text-[#F6EFE5] text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {friends.length}
+                </span>
+              )}
+            </button>
+          )}
+
+          {/* Add Habit Section */}
           {isSidebarOpen &&
             (!isAdding ? (
               <button
@@ -123,30 +170,74 @@ function App() {
                   setIsAdding(true);
                   setIsDeleting(false);
                 }}
-                className="p-2 bg-[#AB5419] hover:bg-[#AA7C4D] text-white text-xs font-bold rounded"
+                className="p-2 bg-[#AB5419] hover:bg-[#AA7C4D] text-white text-xs font-bold rounded transition-colors shadow-sm"
               >
                 + Add Habit
               </button>
             ) : (
               <form
-                onSubmit={(e) => {
-                  handleAddHabit(e);
-                  setIsAdding(false);
-                }}
-                className="flex flex-col gap-2"
+                onSubmit={handleAddHabit}
+                className="flex flex-col gap-2 bg-[#251712]/40 p-2.5 rounded-lg border border-[#CDB494]/20"
               >
                 <input
                   type="text"
                   autoFocus
                   value={newHabitName}
                   onChange={(e) => setNewHabitName(e.target.value)}
-                  placeholder="New habit name..."
-                  className="px-3 py-2 bg-[#251712] border border-[#CDB494]/30 rounded text-xs text-[#F6EFE5] placeholder-[#928464] focus:outline-none"
+                  placeholder="Habit name..."
+                  className="px-3 py-1.5 bg-[#251712] border border-[#CDB494]/30 rounded text-xs text-[#F6EFE5] placeholder-[#928464] focus:outline-none"
                 />
-                <div className="flex gap-2">
+
+                {/* Habit Type Selector (Solo vs Dual) */}
+                {friends.length > 0 ? (
+                  <div className="flex flex-col gap-1.5 pt-1">
+                    <div className="flex items-center justify-between text-[11px] text-[#F6EFE5]">
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="habitType"
+                          checked={!isDualHabit}
+                          onChange={() => setIsDualHabit(false)}
+                          className="accent-[#AB5419]"
+                        />
+                        <span>Solo</span>
+                      </label>
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="habitType"
+                          checked={isDualHabit}
+                          onChange={() => setIsDualHabit(true)}
+                          className="accent-[#AB5419]"
+                        />
+                        <span>👥 Dual</span>
+                      </label>
+                    </div>
+
+                    {isDualHabit && (
+                      <select
+                        value={selectedPartnerId}
+                        onChange={(e) => setSelectedPartnerId(e.target.value)}
+                        className="px-2 py-1 bg-[#251712] text-[#F6EFE5] text-[11px] rounded border border-[#CDB494]/30 focus:outline-none"
+                      >
+                        {friends.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            Partner: {f.username}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-[10px] text-[#CDB494]/80 italic">
+                    💡 Connect a friend in Profile to create Dual Habits!
+                  </span>
+                )}
+
+                <div className="flex gap-2 pt-1">
                   <button
                     type="submit"
-                    className="flex-1 p-1.5 bg-[#AB5419] text-white text-xs font-bold rounded"
+                    className="flex-1 p-1.5 bg-[#AB5419] hover:bg-[#AA7C4D] text-white text-xs font-bold rounded transition-colors"
                   >
                     Add
                   </button>
@@ -160,6 +251,8 @@ function App() {
                 </div>
               </form>
             ))}
+
+          {/* Delete Habit Section */}
           {isSidebarOpen &&
             habits.length > 0 &&
             (!isDeleting ? (
@@ -169,7 +262,7 @@ function App() {
                   setIsAdding(false);
                   if (habits.length > 0) setDeletingHabitName(habits[0].name);
                 }}
-                className="p-2 bg-[#AB5419]/20 hover:bg-[#AB5419]/40 text-[#F6EFE5] text-xs font-bold rounded border border-[#AB5419]/30"
+                className="p-2 bg-[#AB5419]/20 hover:bg-[#AB5419]/40 text-[#F6EFE5] text-xs font-bold rounded border border-[#AB5419]/30 transition-colors"
               >
                 - Delete Habit
               </button>
@@ -205,6 +298,8 @@ function App() {
                 </div>
               </div>
             ))}
+
+          {/* Sidebar Footer */}
           {isSidebarOpen && (
             <div className="mt-auto pt-4 border-t border-[#CDB494]/20 flex flex-col gap-2">
               <div className="text-xs text-[#F6EFE5] italic">
@@ -231,7 +326,7 @@ function App() {
               My Habits
             </h1>
             <p className="text-[#6B5B47] text-sm italic mt-1">
-              Record of daily pursuits
+              Record of daily pursuits & dual streaks
             </p>
           </div>
           <input
@@ -243,17 +338,38 @@ function App() {
             className="px-3 py-1.5 bg-[#F6EFE5] border border-[#CDB494]/60 rounded-lg text-sm text-[#2A1A0F] font-semibold focus:outline-none focus:border-[#AB5419] shadow-sm cursor-pointer"
           />
         </header>
-        <div className="flex flex-wrap gap-6 justify-center md:justify-start">
-          {habits.map((habit) => (
-            <HabitCard
-              key={habit.id}
-              habit={habit}
-              onToggle={handleToggleComplete}
-            />
-          ))}
-        </div>
+
+        {habits.length === 0 ? (
+          <div className="text-center py-12 border-2 border-dashed border-[#7F2F07]/30 rounded-2xl bg-[#F6EFE5]/40 p-8 flex flex-col items-center gap-3">
+            <span className="text-3xl">📜</span>
+            <h3 className="text-lg font-bold text-[#7F2F07]">No Habits Recorded Yet</h3>
+            <p className="text-xs text-[#6B5B47] max-w-sm">
+              Use the sidebar to add a solo habit or link with a friend via Profile to start a Dual Streak!
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-6 justify-center md:justify-start">
+            {habits.map((habit) => (
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                onToggle={handleToggleComplete}
+              />
+            ))}
+          </div>
+        )}
+
         <AnalyticsChart data={analyticsData} />
       </main>
+
+      {/* User Profile & Friends Modal */}
+      <UserProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => {
+          setIsProfileOpen(false);
+          loadHabits();
+        }}
+      />
     </div>
   );
 }
