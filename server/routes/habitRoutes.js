@@ -5,6 +5,8 @@ const {
   getHabits,
   addHabit,
   addDualHabit,
+  acceptHabitInvite,
+  declineHabitInvite,
   deleteHabit,
   clearHabits,
   toggleComplete,
@@ -14,6 +16,8 @@ const {
 router.get("/habits", authenticateToken, getHabits);
 router.post("/api/add", authenticateToken, addHabit);
 router.post("/api/add-dual", authenticateToken, addDualHabit);
+router.post("/api/habits/accept", authenticateToken, acceptHabitInvite);
+router.post("/api/habits/decline", authenticateToken, declineHabitInvite);
 router.delete("/api/delete/:name", authenticateToken, deleteHabit);
 router.delete("/api/clear", authenticateToken, clearHabits);
 router.post("/api/complete", authenticateToken, toggleComplete);

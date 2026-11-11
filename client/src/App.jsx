@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import {
   fetchHabits,
   addHabit,
   addDualHabit,
+  acceptHabitInvite,
+  declineHabitInvite,
   deleteHabit,
   toggleCompleteHabit,
   fetchAnalytics,
   fetchFriends,
 } from "./api";
 import HabitCard from "./components/HabitCard";
-import AnalyticsChart from "./components/AnalyticsChart";
 import AuthScreen from "./components/AuthScreen";
-import UserProfileModal from "./components/UserProfileModal";
 import Sidebar from "./components/Sidebar";
+
+// Lazy-load heavier components to keep initial bundle ultra-fast
+const AnalyticsChart = React.lazy(() => import("./components/AnalyticsChart"));
+const UserProfileModal = React.lazy(() => import("./components/UserProfileModal"));
 
 function App() {
   const [habits, setHabits] = useState([]);
@@ -34,13 +38,15 @@ function App() {
     () => localStorage.getItem("username") || "",
   );
 
-  const loadHabits = async () => {
+  const loadHabits = useCallback(async () => {
     try {
-      const data = await fetchHabits(selectedDate);
+      const [data, analytics, friendsList] = await Promise.all([
+        fetchHabits(selectedDate),
+        fetchAnalytics(),
+        fetchFriends(),
+      ]);
       setHabits(data);
-      const analytics = await fetchAnalytics();
       setAnalyticsData(analytics);
-      const friendsList = await fetchFriends();
       setFriends(friendsList);
       if (friendsList.length > 0 && !selectedPartnerId) {
         setSelectedPartnerId(friendsList[0].id);
@@ -48,12 +54,30 @@ function App() {
     } catch (error) {
       console.error("Error fetching data:", error);
     }
-  };
+  }, [selectedDate, selectedPartnerId]);
 
-  const handleToggleComplete = async (habit) => {
+  const handleToggleComplete = useCallback(async (habit) => {
     await toggleCompleteHabit(habit.id, selectedDate);
     loadHabits();
-  };
+  }, [selectedDate, loadHabits]);
+
+  const handleAcceptInvite = useCallback(async (habitId) => {
+    try {
+      await acceptHabitInvite(habitId);
+      loadHabits();
+    } catch (err) {
+      alert(err.message || "Failed to accept invite");
+    }
+  }, [loadHabits]);
+
+  const handleDeclineInvite = useCallback(async (habitId) => {
+    try {
+      await declineHabitInvite(habitId);
+      loadHabits();
+    } catch (err) {
+      alert(err.message || "Failed to decline invite");
+    }
+  }, [loadHabits]);
 
   const handleAddHabit = async (e) => {
     e.preventDefault();
@@ -101,7 +125,7 @@ function App() {
     if (token) {
       loadHabits();
     }
-  }, [selectedDate, token]);
+  }, [token, loadHabits]);
 
   if (!token) {
     return (
@@ -175,21 +199,29 @@ function App() {
                 key={habit.id}
                 habit={habit}
                 onToggle={handleToggleComplete}
+                onAcceptInvite={handleAcceptInvite}
+                onDeclineInvite={handleDeclineInvite}
               />
             ))}
           </div>
         )}
 
-        <AnalyticsChart data={analyticsData} />
+        <Suspense fallback={<div className="h-48 bg-[#F6EFE5]/40 rounded-lg animate-pulse" />}>
+          <AnalyticsChart data={analyticsData} />
+        </Suspense>
       </main>
 
-      <UserProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => {
-          setIsProfileOpen(false);
-          loadHabits();
-        }}
-      />
+      <Suspense fallback={null}>
+        {isProfileOpen && (
+          <UserProfileModal
+            isOpen={isProfileOpen}
+            onClose={() => {
+              setIsProfileOpen(false);
+              loadHabits();
+            }}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

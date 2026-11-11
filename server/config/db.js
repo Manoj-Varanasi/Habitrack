@@ -30,7 +30,8 @@ const initialiseDB = async () => {
         name TEXT NOT NULL,
         is_dual BOOLEAN DEFAULT FALSE,
         partner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        pair_habit_id INTEGER
+        pair_habit_id INTEGER,
+        invite_status TEXT DEFAULT 'accepted'
       );
     `);
 
@@ -38,6 +39,7 @@ const initialiseDB = async () => {
       ALTER TABLE habits ADD COLUMN IF NOT EXISTS is_dual BOOLEAN DEFAULT FALSE;
       ALTER TABLE habits ADD COLUMN IF NOT EXISTS partner_id INTEGER REFERENCES users(id) ON DELETE CASCADE;
       ALTER TABLE habits ADD COLUMN IF NOT EXISTS pair_habit_id INTEGER;
+      ALTER TABLE habits ADD COLUMN IF NOT EXISTS invite_status TEXT DEFAULT 'accepted';
     `);
 
     // 3. Completions table

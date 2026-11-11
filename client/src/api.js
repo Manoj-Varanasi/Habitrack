@@ -33,6 +33,26 @@ export const addDualHabit = async (name, partnerId) => {
   return await response.text();
 };
 
+export const acceptHabitInvite = async (id) => {
+  const response = await fetch(`${BASE_URL}/api/habits/accept`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ id }),
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return await response.text();
+};
+
+export const declineHabitInvite = async (id) => {
+  const response = await fetch(`${BASE_URL}/api/habits/decline`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ id }),
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return await response.text();
+};
+
 export const deleteHabit = async (name) => {
   const response = await fetch(
     `${BASE_URL}/api/delete/${encodeURIComponent(name)}`,
